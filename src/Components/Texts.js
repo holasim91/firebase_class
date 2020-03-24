@@ -14,6 +14,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 import Link from '@material-ui/core/Link'
+import {Link as RouterLink} from 'react-router-dom'
 
 const styles = theme => ({
   hidden: {
@@ -150,13 +151,11 @@ class Texts extends Component {
                               </Typography>
                             </Grid>
                             <Grid item xs={3}>
-                              <Typography variant="h5" component="h2">
-                                <Link>
+                                <Link component={RouterLink} to={"detail/"+id}> 
                                   <Button variant="contained" color="primary">
                                     보기
                                   </Button>
                                 </Link>
-                              </Typography>
                             </Grid>
                             <Grid item xs={3}>
                               <Button variant="contained" color="primary" onClick={()=>this.handleDelete(id) }>
