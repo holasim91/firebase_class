@@ -84,7 +84,13 @@ class Words extends Component {
     let nextState = {};
     nextState[e.target.name] = e.target.value;
     this.setState(nextState);
+    if (e.target.value < 1) {
+      this.setState({ weight: 1 });
+    } else if (e.target.value > 9) {
+      this.setState({ weight: 9 });
+    }
   };
+
   handleSubmit = () => {
     const word = {
       word: this.state.word,
@@ -153,7 +159,7 @@ class Words extends Component {
             />
             <br />
             <TextField
-              label="가중치"
+              label="가중치(1부터 9까지)"
               type="text"
               name="weight"
               value={this.state.weight}

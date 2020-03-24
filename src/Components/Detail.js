@@ -8,6 +8,8 @@ import UpdateIcon from "@material-ui/icons/Update";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from '@material-ui/core/DialogContent'
+import TextField from '@material-ui/core/TextField'
 import Button from "@material-ui/core/Button";
 
 const DB_URL = "https://word-cloud-169be.firebaseio.com/";
@@ -28,7 +30,9 @@ class Detail extends Component {
       dialog: false,
       textContent: "",
       words: {},
-      imageUrl: null
+      imageUrl: null,
+      maxCount: 30,
+      minLength: 1
     };
   }
   componentDidMount() {
@@ -58,56 +62,83 @@ class Detail extends Component {
   }
 
   _getImage() {
-    fetch(`${API_URL}/validate?textID=${this.props.match.params.textID}`).then(res => {
-    if(res.status != 200) {
-    throw new Error(res.statusText);
-    }
-    return res.json();
-    }).then(data => {
-    if(data['result'] === true) {
-    this.setState({imageUrl: API_URL + "/outputs?textID=" + this.props.match.params.textID})
-    } else {
-    this.setState({imageUrl: 'NONE'});
-    }
-    });
-    }
-    
-    
-  handleDialogToggle = () =>
-    this.setState({
-      dialog: !this.state.dialog
-    });
-
-    handleSubmit=()=>{
-      this.setState({imageUrl:'READY'})
-      const wordCloud={
-        textID: this.props.match.params.textID,
-        text: this.state.textContent,
-        maxCount:30,
-        minLength:1,
-        words: this.state.words
-      }
-      this.handleDialogToggle()
-      if(!wordCloud.textID ||
-          !wordCloud.text||
-          !wordCloud.maxCount||
-          !wordCloud.minLength||
-          !wordCloud.words){
-            return
-          }
-          this._post(wordCloud)
-    }
-    _post = (wordCloud) =>{
-      fetch(`${API_URL}/process`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(wordCloud)})
+    fetch(`${API_URL}/validate?textID=${this.props.match.params.textID}`)
       .then(res => {
         if (res.status != 200) {
           throw new Error(res.statusText);
         }
         return res.json();
       })
-      .then(data => this.setState({ imageUrl: API_URL+'/outputs?textID='+this.props.match.params.textID }));
+      .then(data => {
+        if (data["result"] === true) {
+          this.setState({
+            imageUrl:
+              API_URL + "/outputs?textID=" + this.props.match.params.textID
+          });
+        } else {
+          this.setState({ imageUrl: "NONE" });
+        }
+      });
+  }
 
+  handleDialogToggle = () =>
+    this.setState({
+      dialog: !this.state.dialog
+    });
+
+  handleValueChange = (e) => {
+    let nextState = {};
+    if (e.target.value % 1 === 0) {
+      if (e.target.value < 1) {
+        nextState[e.target.name] = 1;
+      } else {
+        nextState[e.target.name] = e.target.value;
+      }
     }
+    this.setState(nextState);
+    
+  };
+
+  handleSubmit = () => {
+    this.setState({ imageUrl: "READY" });
+    const wordCloud = {
+      textID: this.props.match.params.textID,
+      text: this.state.textContent,
+      maxCount: this.state.maxCount,
+      minLength: this.state.minLength,
+      words: this.state.words
+    };
+    this.handleDialogToggle();
+    if (
+      !wordCloud.textID ||
+      !wordCloud.text ||
+      !wordCloud.maxCount ||
+      !wordCloud.minLength ||
+      !wordCloud.words
+    ) {
+      return;
+    }
+    this._post(wordCloud);
+  };
+  _post = wordCloud => {
+    fetch(`${API_URL}/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(wordCloud)
+    })
+      .then(res => {
+        if (res.status != 200) {
+          throw new Error(res.statusText);
+        }
+        return res.json();
+      })
+      .then(data =>
+        this.setState({
+          imageUrl:
+            API_URL + "/outputs?textID=" + this.props.match.params.textID
+        })
+      );
+  };
 
   render() {
     const { classes } = this.props;
@@ -115,23 +146,21 @@ class Detail extends Component {
       <div>
         <Card>
           <CardContent>
-            {
-                (this.state.imageUrl) ? (
-                (this.state.imageUrl === "READY" )? 
-                    "워드 클라우드 이미지를 불러오고 있습니다."
-                 : (this.state.imageUrl === "NONE") ? 
-                    "해당 텍스트에 대한 워드 클라우드를 만들어 주세요."
-                 : (
-                    <img
-                    key={Math.random()}
-                    src={this.state.imageUrl + "&random=" + Math.random()}
-                    style={{ width: "100%" }}
-                    />
-                )
-                ) : 
-                ''
-                
-            }
+            {this.state.imageUrl ? (
+              this.state.imageUrl === "READY" ? (
+                "워드 클라우드 이미지를 불러오고 있습니다."
+              ) : this.state.imageUrl === "NONE" ? (
+                "해당 텍스트에 대한 워드 클라우드를 만들어 주세요."
+              ) : (
+                <img
+                  key={Math.random()}
+                  src={this.state.imageUrl + "&random=" + Math.random()}
+                  style={{ width: "100%" }}
+                />
+              )
+            ) : (
+              ""
+            )}
           </CardContent>
         </Card>
         <Fab
@@ -142,21 +171,41 @@ class Detail extends Component {
           <UpdateIcon />
         </Fab>
         <Dialog open={this.state.dialog} onClose={this.handleDialogToggle}>
-          <DialogTitle>
-            워드 클라우드 생성
-          </DialogTitle>
+          <DialogTitle>워드 클라우드 생성</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="최대 단어 개수"
+              type="number"
+              name="maxCount"
+              value={this.state.maxCount}
+              onChange={this.handleValueChange}
+            />
+            <br />
+            <TextField
+              label="최소 단어 길이"
+              type="number"
+              name="minLength"
+              value={this.state.minLength}
+              onChange={this.handleValueChange}
+            />
+            <br />
+          </DialogContent>
           <DialogActions>
-          <Button variant='contained' color='primary' onClick={this.handleSubmit}>
-            {(this.state.imageUrl==='NONE')?'만들기':'다시 만들기'}
-          </Button>
-          <Button
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={this.handleSubmit}
+            >
+              {this.state.imageUrl === "NONE" ? "만들기" : "다시 만들기"}
+            </Button>
+            <Button
               variant="outlined"
               color="primary"
               onClick={this.handleDialogToggle}
             >
               닫기
             </Button>
-            </DialogActions>
+          </DialogActions>
         </Dialog>
       </div>
     );
